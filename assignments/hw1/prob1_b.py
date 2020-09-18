@@ -24,6 +24,7 @@ if __name__ == '__main__':
         est = deriv(np.exp, x0, delta)
         errors[i] = np.abs(est - truth)
     print("Optimal delta: %s" % delta_i[np.argmin(errors)])
+    print("Lowest error: %s" % errors[np.argmin(errors)])
     
     # 2) exp(0.01x)
     def exp_001(x):
@@ -35,3 +36,4 @@ if __name__ == '__main__':
         est = deriv(exp_001, x0, delta)
         errors[i] = np.abs(est - truth)
     print("Optimal delta: %s" % delta_i[np.argmin(errors)])
+    print("Lowest error: %s" % errors[np.argmin(errors)])

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     plt.xlabel('Voltage (V)')
     plt.ylabel('Temperature (K)')
     plt.legend(['Real data', 'Interpolated data'])
-    plt.savefig('lakeshore_interp.png')
+    plt.savefig('images/prob2_lakeshore_interp.png')
     
     # Compute error on even points
     print("Error: %f" % np.std(data[1::2,0] - interp(data[1::2,1])))
