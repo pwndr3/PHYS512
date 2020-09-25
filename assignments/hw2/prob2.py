@@ -2,80 +2,85 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import linalg
 
-def cheb_fit(fun, order):
-    x = np.linspace(0.5, 1, order + 1)
-    y = fun(x)
-    
-    mat = np.zeros([order + 1, order + 1])
+def cheb_mat(x, order):
+    """
+    Generate Chebyshev matrix.
+    """
+    mat = np.zeros([len(x), order + 1])
     mat[:, 0] = 1
     mat[:, 1] = x
     
     for i in range(1, order):
         mat[:, i + 1] = 2 * x * mat[:, i] - mat[:, i - 1]
     
-    u,s,v = np.linalg.svd(mat, 0)
-    coeffs = v.T@(np.diag(1.0/s)@(u.T@y))
-    
-    return coeffs
+    return mat
 
-def cheb_eval(coeffs, x):
-    if len(coeffs) == 1:
-        return coeffs[0] * np.zeros(len(x))
-    elif len(coeffs) == 2:
-        return coeffs[0] * np.zeros(len(x)) + coeffs[1] * x
-    else:
-        T0 = np.ones(len(x))
-        T1 = x
-        res = np.zeros(len(x))
-        for i in range(0, len(coeffs)):
-            res += T0 * coeffs[i]
-            
-            tmp = T1
-            T1 = 2 * x * T1 - T0
-            T0 = tmp
-        return res
+if __name__ == '__main__':
+    # Define function
+    fun = np.log2
     
-def legendre_poly_fit(fun, order):
-    x = np.linspace(0.5, 1, order + 1)
+    x = np.linspace(0.5, 1, 101)
     y = fun(x)
     
-    coeffs = np.polynomial.legendre.legfit(x, y, order)
+    # Scale x for optimal fitting in [-1, 1]
+    x_scaled = x * 4 - 3
     
-    return coeffs
+    # a) Orders to evaluate 
+    orders = range(3, 11)
 
-fun = np.log2
-orders = range(3, 11)
-acc = np.zeros(len(orders))
-for i, order in enumerate(orders):
-    coeffs = cheb_fit(fun, order + 1)
+    # Fit and extract coefficients
+    A = cheb_mat(x_scaled, max(np.max(orders), 50))
+    u,s,v = np.linalg.svd(A, 0)
+    cheb_coeffs = v.T@(np.diag(1.0/s)@(u.T@y))
 
-    x = np.linspace(0.5, 1, 100)
-    y = cheb_eval(coeffs, x)
-    y_true = fun(x)
+    # For each order, get the truncated Chebyshev coefficients
+    # and compute the accuracy
+    acc = np.zeros(len(orders))
+    for i, order in enumerate(orders):
+        # Predict
+        y_pred = A[:, :order]@cheb_coeffs[:order]
+        
+        # Get accuracy
+        acc[i] = np.mean(np.abs(y_pred - y))
+        
+        print(order, acc[i])
+
+    # Plot accuracy vs order
+    plt.semilogy(orders, acc)
+    plt.semilogy(orders, 1e-6 * np.ones(len(orders)))
+    plt.xlabel('Chebyshev polynomial order')
+    plt.ylabel('Accuracy')
+    plt.legend(['Chebyshev polynomial accuracy', r'Accuracy limit ($\times 10^{-6}$)'])
+    plt.savefig("images/prob2_cheb_acc.png")
+
+    # b) Extract order to use (where accuracy is less than 1e-6)
+    best_order = orders[np.where(acc < 1e-6)[0][0]]
+    print("Best order: %d" % best_order)
     
-    acc[i] = np.max(np.abs(y - y_true))
+    # Chebyshev
+    y_cheb = A[:, :best_order]@cheb_coeffs[:best_order]
     
-    print(order, acc[i])
+    print("Chebyshev:")
+    print("\tRMS: %e" % np.std(y - y_cheb))
+    print("\tMax: %e" % np.max(np.abs(y - y_cheb)))
 
-plt.plot(orders, acc)
-plt.plot(orders, 1e-6 * np.ones(len(orders)))
-plt.xlabel('Chebyshev polynomial order')
-plt.ylabel('Accuracy')
-plt.legend(['Chebyshev polynomial accuracy', r'Accuracy limit ($\times 10^{-6}$)'])
-plt.show()
+    # Legendre polynomial
+    A = np.polynomial.legendre.legvander(x_scaled, max(np.max(orders), 50))
+    
+    u,s,v = np.linalg.svd(A, 0)
+    poly_coeffs = v.T@(np.diag(1.0/s)@(u.T@y))
+    
+    y_poly = A[:, :best_order]@poly_coeffs[:best_order]
+    
+    print("Polynomial:")
+    print("\tRMS: %e" % np.std(y - y_poly))
+    print("\tMax: %e" % np.max(np.abs(y - y_poly)))
 
-best_order = orders[np.where(acc < 1e-6)[0][0]]
-coeffs = cheb_fit(fun, best_order + 1)
-x = np.linspace(0.5, 1, 100)
-y_cheb = cheb_eval(coeffs, x)
-y_true = fun(x)
-
-coeffs = legendre_poly_fit(fun, best_order)
-y_poly = np.polynomial.legendre.legval(x, coeffs)
-
-plt.plot(x, (y_cheb - y_true)/1e-6)
-plt.plot(x, (y_poly - y_true)/1e-6)
-plt.xlabel(r'$x$')
-plt.ylabel(r'Residuals ($\times 10^{-6}$)')
-plt.legend(['Chebyshev polynomials', 'Legendre polynomials'])
-plt.show()
+    # Plot residuals
+    plt.clf()
+    plt.plot(x, (y_cheb - y)/1e-7)
+    plt.plot(x, (y_poly - y)/1e-7)
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'Residuals ($\times 10^{-7}$)')
+    plt.legend(['Chebyshev polynomials', 'Legendre polynomials'])
+    plt.savefig("images/prob2_residuals.png")

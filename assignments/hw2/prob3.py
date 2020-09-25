@@ -15,6 +15,7 @@ def u238_decay(t, y):
     def from_seconds(s):
         return from_minutes(s / 60.0)
 
+    # Half lives in years
     half_lives = [
         4.468e9,                # U-238
         from_days(24.1),        # Th-234
@@ -69,14 +70,14 @@ if __name__ == '__main__':
                'Bi-210', 
                'Po-210',
                'Pb-206'])
-    plt.savefig('prob3_u238_decay.png')
+    plt.savefig('images/prob3_u238_decay.png')
 
     # Pb-206/U-238 number ratio
     plt.clf()
     plt.plot(ans.t/1e10, ans.y[-1,:]/ans.y[0,:])
     plt.xlabel(r'Time ($\times 10^{10}$ years)')
     plt.ylabel('Pb-206/U-238 number ratio')
-    plt.savefig('prob3_pb206_u238.png')
+    plt.savefig('images/prob3_pb206_u238.png')
 
     # Th-230/U-234 number ratio
     plt.clf()
@@ -85,4 +86,6 @@ if __name__ == '__main__':
     plt.plot(ans.t/1e6, ans.y[4,:]/ans.y[3,:])
     plt.xlabel(r'Time ($\times 10^6$ years)')
     plt.ylabel('Th-230/U-234 number ratio')
-    plt.savefig('prob3_th230_u234.png')
+    plt.savefig('images/prob3_th230_u234.png')
+    
+    
